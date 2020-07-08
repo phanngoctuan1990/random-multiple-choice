@@ -1,10 +1,8 @@
 <template>
     <div class="container">
-        <div class="main mt-4">
-            <div class="row">
-                <div class="col-md-8 offset-2 text-center">
-                    <router-view></router-view>
-                </div>
+        <div class="row mt-4">
+            <div class="col-md">
+                <router-view></router-view>
             </div>
         </div>
     </div>
@@ -15,3 +13,18 @@ export default {
     name: "App"
 };
 </script>
+
+<style>
+.container {
+    padding: 1rem;
+    min-height: 100%;
+    background-color: #edeae5;
+}
+.footer {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    position: fixed;
+    text-align: center;
+}
+</style>
