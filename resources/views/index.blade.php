@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="h-100">
 
 <head>
     <meta charset="utf-8">
@@ -11,8 +11,10 @@
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
 </head>
 
-<body class="app header-fixed sidebar-fixed aside-menu-fixed aside-menu-hidden">
+<body class="h-100">
+    @include('layouts.header')
     <div id="app"></div>
+    @include('layouts.footer')
     <script src="{{ mix('js/app.js') }}"></script>
 </body>
 
