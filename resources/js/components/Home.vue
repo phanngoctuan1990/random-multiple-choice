@@ -16,7 +16,7 @@
                     </label>
                 </div>
             </div>
-            <div v-show="sheet_names.length" class="row mt-4 text-center">
+            <div v-show="sheets_random.length" class="row mt-4 text-center">
                 <div class="col-md">
                     <label>Number rows random for: </label>
                     <div class="form-check-inline">
@@ -45,13 +45,13 @@
                     </div>
                 </div>
             </div>
-            <div v-show="sheet_names.length" class="row mt-4">
+            <div v-show="sheets_random.length" class="row mt-4">
                 <div class="col-md text-center">
                     <table class="table">
                         <thead class="thead-dark">
                             <tr>
                                 <th
-                                    v-for="(sheet, index) in sheet_names"
+                                    v-for="(sheet, index) in sheets_random"
                                     class="font-weight-bold"
                                     :key="index"
                                 >
@@ -62,7 +62,7 @@
                         <tbody v-show="random_type == 1">
                             <tr>
                                 <td
-                                    v-for="(sheet, index) in sheet_names"
+                                    v-for="(sheet, index) in sheets_random"
                                     :key="index"
                                 >
                                     <input
@@ -77,7 +77,7 @@
                 </div>
             </div>
             <div
-                v-show="sheet_names.length && random_type == 0"
+                v-show="sheets_random.length && random_type == 0"
                 class="row mt-4 text-center offset-4"
             >
                 <div class="col-md-6 form-group">
@@ -93,13 +93,22 @@
 
         <div class="mt-4">
             <ul class="nav justify-content-center">
-                <li class="nav-item">
+                <li class="nav-item mr-1">
                     <button
                         type="button"
                         @click="handlerGenerate"
-                        class="btn btn-success btn-lg btn-block"
+                        class="btn btn-success btn btn-block"
                     >
                         Generate File
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button
+                        type="button"
+                        @click="handlerReset"
+                        class="btn btn-warning btn btn-block"
+                    >
+                        Reset
                     </button>
                 </li>
             </ul>
@@ -116,20 +125,21 @@
 
 <script>
 import XLSX from "xlsx";
+import http from "../services/http";
 
 export default {
     name: "Home",
     data() {
         return {
             file: null,
-            sheet_names: [],
+            sheets_random: [],
             random_type: 0,
             number_random: ""
         };
     },
     methods: {
         importFile(e) {
-            this.sheet_names = [];
+            this.sheets_random = [];
             this.random_type = 0;
 
             const files = e.target.files;
@@ -145,58 +155,100 @@ export default {
                 const bstr = e.target.result;
                 const wb = XLSX.read(bstr, { type: "binary" });
                 wb.SheetNames.map(name => {
-                    this.sheet_names.push({
+                    this.sheets_random.push({
                         name: name,
                         num_random: 0,
-                        data: null
+                        data: []
                     });
                 });
             };
             reader.readAsBinaryString(file);
         },
         readFile(file) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                /* Parse data */
-                const bstr = e.target.result;
-                const wb = XLSX.read(bstr, { type: "binary" });
-                /* Get first worksheet */
-                this.sheet_names.map(sheet => {
-                    if (parseInt(sheet.num_random) > 0) {
-                        const wsname = sheet.name;
-                        console.log(wsname);
+            return new Promise((resolve, reject) => {
+                let result = [];
+                const reader = new FileReader();
+                reader.onload = e => {
+                    /* Parse data */
+                    const bstr = e.target.result;
+                    const wb = XLSX.read(bstr, { type: "binary" });
+                    /* Get first worksheet */
+                    this.sheets_random.map(sheet => {
+                        if (parseInt(sheet.num_random) > 0) {
+                            const wsname = sheet.name;
+                            const ws = wb.Sheets[wsname];
 
-                        const ws = wb.Sheets[wsname];
-                        /* Convert array of arrays */
-                        const rows = XLSX.utils.sheet_to_json(ws, {
-                            header: 1
-                        });
-                        console.log(rows);
-                        if (
-                            parseInt(sheet.num_random) >
-                            (rows.length - 1) / 4
-                        ) {
-                            sheet.data = rows.shift();
+                            /* Convert array of arrays */
+                            const rows = XLSX.utils.sheet_to_json(ws, {
+                                header: 1
+                            });
+                            rows.shift();
+                            sheet.data = rows;
+                            result.push(sheet);
                         }
-                        console.log(sheet);
-
-                        /* Update state */
-                        // this.data = data;
-                        // this.cols = make_cols(ws["!ref"]);
-                        // console.log(this.data);
-                    }
-                });
-            };
-            reader.readAsBinaryString(file);
+                    });
+                    resolve(result);
+                };
+                reader.readAsBinaryString(file);
+            });
+        },
+        handlerReset() {
+            this.number_random = "";
+            this.sheets_random.map(sheet => {
+                sheet.num_random = 0;
+            });
         },
         handlerGenerate() {
-            this.$toast.info("This feature is comming soon!!!");
+            if (!this.validate()) {
+                this.$toast.error("Please enter number random");
+                return;
+            }
+
             if (this.random_type == 0) {
-                this.sheet_names.map(sheet => {
-                    sheet.number_random = this.number_random;
+                this.sheets_random.map(sheet => {
+                    sheet.num_random = this.number_random;
                 });
             }
-            this.readFile(this.file);
+
+            this.readFile(this.file).then(res => {
+                this.sendToServe(res).then(res => {
+                    var newBlob = new Blob([res], {
+                        type: "application/pdf"
+                    });
+                    const data = window.URL.createObjectURL(newBlob);
+                    var link = document.createElement("a");
+                    link.href = data;
+                    link.download = "multiple_choices.pdf";
+                    link.click();
+                });
+            });
+        },
+        validate() {
+            switch (this.random_type) {
+                case "1":
+                    let sheets = this.sheets_random.filter(
+                        sheet =>
+                            sheet.num_random && parseInt(sheet.num_random) > 0
+                    );
+                    return sheets.length > 0;
+
+                default:
+                    return this.number_random && this.number_random != 0;
+            }
+        },
+        async sendToServe(payload) {
+            try {
+                const { data } = await http.post(
+                    "/generate-multiple-choices",
+                    {
+                        generate_data: payload
+                    },
+                    { responseType: "arraybuffer" }
+                );
+                return data;
+            } catch (error) {
+                console.error(error);
+            }
         }
     }
 };
