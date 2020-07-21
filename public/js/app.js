@@ -2185,12 +2185,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       this.readFile(this.file).then(function (res) {
         _this3.sendToServe(res).then(function (res) {
           var newBlob = new Blob([res], {
-            type: "application/pdf"
+            type: "application/*"
           });
           var data = window.URL.createObjectURL(newBlob);
           var link = document.createElement("a");
           link.href = data;
-          link.download = "multiple_choices.pdf";
+          link.download = "multiple_choices.docx";
           link.click();
         });
       });

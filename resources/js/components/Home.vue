@@ -212,13 +212,11 @@ export default {
 
             this.readFile(this.file).then(res => {
                 this.sendToServe(res).then(res => {
-                    var newBlob = new Blob([res], {
-                        type: "application/pdf"
-                    });
+                    var newBlob = new Blob([res], { type: "application/*" });
                     const data = window.URL.createObjectURL(newBlob);
                     var link = document.createElement("a");
                     link.href = data;
-                    link.download = "multiple_choices.pdf";
+                    link.download = "multiple_choices.docx";
                     link.click();
                 });
             });
