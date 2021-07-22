@@ -26,6 +26,6 @@
     "dependencies": {
         "vue-bootstrap-toasts": "^1.0.7",
         "vue-router": "^3.3.4",
-        "xlsx": "^0.16.3"
+        "xlsx": "^0.17.0"
     }
 }
